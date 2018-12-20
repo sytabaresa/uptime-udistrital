@@ -3,7 +3,6 @@ version: '3.4'
 services:
 
   statup:
-    container_name: statup
     image: sytabaresa/statping:latest
     restart: always
     ports:
@@ -18,14 +17,21 @@ services:
       DB_CONN: postgres
       DB_HOST: postgres
       DB_USER: statup
-      DB_PASS: zMyZug1Gf8SxQ4UAkBFRXcFodLhfjolwoTW9s2Sl
       DB_DATABASE: statup
       http_proxy: http://10.20.4.15:3128
       https_proxy: http://10.20.4.15:3128
       no_proxy: "localhost,127.0.0.0/8,::1,0.0.0.0,10.0.0.0/8"
+    env_file:
+      - ./db_password_env.priv #TODO: cambiar cuando halla soporte a docker secrets
+
+    secrets:
+      - db_password
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
 
   postgres:
-    container_name: postgres
     image: postgres:10.6-alpine
     restart: always
     networks:
@@ -33,9 +39,19 @@ services:
     volumes:
       - ./statup/postgres:/var/lib/postgresql/data
     environment:
-      POSTGRES_PASSWORD: zMyZug1Gf8SxQ4UAkBFRXcFodLhfjolwoTW9s2Sl
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
       POSTGRES_USER: statup
       POSTGRES_DB: statup
+    secrets:
+      - db_password
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
 
 networks:
   database:
+
+secrets:
+  db_password:
+    file: ./db_password.priv
